@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Legal RAG Assistant</title>
+  <meta name="description" content="AI-powered legal research assistant with cited sources" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="app">
+
+    <!-- ── Header ──────────────────────────────────── -->
+    <header class="header" id="header">
+      <div class="header-row">
+        <span class="logo">⚖️</span>
+        <h1>Legal RAG Assistant</h1>
+      </div>
+      <p class="tagline">AI-powered legal research &middot; cited sources</p>
+    </header>
+
+    <!-- ── Chat area ───────────────────────────────── -->
+    <main class="chat" id="chat">
+
+      <!-- Welcome screen (hidden after first message) -->
+      <div class="welcome" id="welcome">
+        <div class="welcome-glyph">⚖️</div>
+        <h2>How can I help you today?</h2>
+        <p class="welcome-sub">Ask any question about your uploaded legal documents.</p>
+        <div class="suggestions" id="suggestions">
+          <button class="chip" data-q="What are the key terms of the contract?">Key contract terms</button>
+          <button class="chip" data-q="Summarize the liability clauses">Liability clauses</button>
+          <button class="chip" data-q="What penalties are described in the agreement?">Penalties &amp; remedies</button>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ── Input bar ───────────────────────────────── -->
+    <footer class="input-bar">
+      <form id="form" class="input-row" autocomplete="off">
+        <input type="text" id="input" placeholder="Ask a legal question…" aria-label="Type your question" required />
+        <button type="submit" id="sendBtn" title="Send question">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </form>
+      <p class="footnote">Responses are AI-generated and may not constitute legal advice.</p>
+    </footer>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>

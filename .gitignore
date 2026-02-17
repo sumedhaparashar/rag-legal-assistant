@@ -1,0 +1,23 @@
+# Virtual environment
+venv/
+.venv/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment variables (keep .env.example, ignore actual .env)
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# NOTE: data/vectorstore/ is NOT gitignored — we commit the pre-built
+# FAISS index so Render can serve immediately without rebuilding.
+# NOTE: data/documents/ is NOT gitignored — PDFs are needed for /ingest.
