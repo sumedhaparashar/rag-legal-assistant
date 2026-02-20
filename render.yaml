@@ -3,27 +3,25 @@ services:
   - type: web
     name: rag-legal-assistant
     runtime: python
-    plan: free                        # or starter / standard for production
+    pythonVersion: 3.11          # ✅ ADD THIS LINE
+    plan: free
 
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 
     envVars:
-      # ── LLM provider (Ollama won't work on Render — use an API) ──
       - key: LLM_PROVIDER
-        value: groq                   # or openai / together
+        value: groq
       - key: LLM_API_KEY
-        sync: false                   # set manually in Render dashboard
+        sync: false
       - key: LLM_MODEL
-        value: mixtral-8x7b-32768    # Groq model name
+        value: mixtral-8x7b-32768
       - key: LLM_TEMPERATURE
         value: "0.2"
 
-      # ── Embeddings ────────────────────────────────────────────────
       - key: EMBEDDING_MODEL_NAME
         value: sentence-transformers/all-MiniLM-L6-v2
 
-      # ── Retrieval ─────────────────────────────────────────────────
       - key: RETRIEVER_K
         value: "5"
       - key: CHUNK_SIZE
@@ -31,6 +29,5 @@ services:
       - key: CHUNK_OVERLAP
         value: "200"
 
-      # ── CORS (add your Render URL here) ────────────────────────────
       - key: ALLOWED_ORIGINS
         value: "https://rag-legal-assistant.onrender.com"
