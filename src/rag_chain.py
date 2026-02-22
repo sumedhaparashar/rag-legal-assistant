@@ -155,7 +155,10 @@ def ask(question: str) -> Dict:
 
     # 4 ── Generate answer via LLM
     llm = get_llm()
-    answer: str = llm.invoke(prompt_value)
+    raw = llm.invoke(prompt_value)
+
+    # ChatOpenAI returns an AIMessage object; Ollama returns a plain str.
+    answer = raw.content if hasattr(raw, "content") else str(raw)
 
     # 5 ── Package response
     return {
