@@ -27,7 +27,7 @@ Design decisions
    which is all ``rag_chain.py`` needs.
 """
 
-from config import (
+from src.config import (
     LLM_PROVIDER,
     OLLAMA_BASE_URL,
     OLLAMA_MODEL,

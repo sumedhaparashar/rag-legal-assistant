@@ -1,0 +1,54 @@
+================================================================================
+LEGAL RAG ASSISTANT - RESEARCH EVALUATION REPORT
+================================================================================
+
+Evaluation Date: 2026-04-25 18:46:20
+Configuration: Chunk Size=800, Chunk Overlap=50
+
+📊 RETRIEVAL METRICS COMPARISON
+----------------------------------------
+
+COSINE:
+  • Avg. Keyword Coverage: 33.00%
+  • Avg. Relevance Score: 0.625
+  • Avg. Retrieval Time: 0.141s
+  • Diversity Score: 0.667
+
+EUCLIDEAN:
+  • Avg. Keyword Coverage: 33.00%
+  • Avg. Relevance Score: 0.543
+  • Avg. Retrieval Time: 0.013s
+  • Diversity Score: 0.667
+
+HYBRID:
+  • Avg. Keyword Coverage: 33.00%
+  • Avg. Relevance Score: 0.948
+  • Avg. Retrieval Time: 0.034s
+  • Diversity Score: 0.667
+
+
+🤖 LLM ANSWER QUALITY
+----------------------------------------
+
+COSINE:
+  • Citation Rate: 100.0%
+  • Avg. Citations per Answer: 10.3
+  • Answer Keyword Coverage: 0.50
+
+EUCLIDEAN:
+  • Citation Rate: 100.0%
+  • Avg. Citations per Answer: 9.7
+  • Answer Keyword Coverage: 0.43
+
+HYBRID:
+  • Citation Rate: 100.0%
+  • Avg. Citations per Answer: 9.3
+  • Answer Keyword Coverage: 0.50
+
+
+🎯 KEY FINDINGS
+----------------------------------------
+
+1. Best Retrieval Quality: COSINE
+2. Recommended Metric: HYBRID (balanced quality & diversity)
+3. Chunk Configuration: 800 chars with 50 overlap

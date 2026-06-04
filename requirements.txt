@@ -22,3 +22,12 @@ python-dotenv
 
 # ── LLM API providers (ChatOpenAI wrapper — works with Groq/Together too)
 openai
+
+# ── Web scraping ─────────────────────────────────────────────────
+requests
+beautifulsoup4
+
+# ── Background scheduling ────────────────────────────────────────
+apscheduler>=3.10,<4.0
+
+gunicorn

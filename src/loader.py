@@ -19,7 +19,7 @@ from typing import List, Union
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from config import CHUNK_SIZE, CHUNK_OVERLAP
+from src.config import CHUNK_SIZE, CHUNK_OVERLAP
 
 
 def load_and_split(
@@ -60,7 +60,7 @@ def load_and_split(
 
 # ── quick smoke-test ─────────────────────────────────────────────
 if __name__ == "__main__":
-    from config import DOCUMENTS_DIR
+    from src.config import DOCUMENTS_DIR
 
     docs = load_and_split(DOCUMENTS_DIR)
     print(f"Total chunks created: {len(docs)}")

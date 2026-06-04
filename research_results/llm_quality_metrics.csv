@@ -1,0 +1,10 @@
+metric,question,has_citations,citation_count,has_confidence,has_not_found_statement,answer_keyword_coverage,llm_response_time,retrieval_time,answer_length,num_sources
+cosine,What are the duties of company directors?,True,17,True,False,0.2,3.5502095222473145,0.028,2684,5
+cosine,How can a company appoint additional directors?,True,7,True,False,0.5,1.8944673538208008,0.021,1949,4
+cosine,What are the penalties for late filing of annual r,True,7,True,False,0.8,3.0948007106781006,0.022,2046,5
+euclidean,What are the duties of company directors?,True,14,True,False,0.0,2.0078909397125244,0.013,2764,5
+euclidean,How can a company appoint additional directors?,True,8,True,False,0.5,1.8454530239105225,0.014,2132,4
+euclidean,What are the penalties for late filing of annual r,True,7,True,False,0.8,2.153700113296509,0.019,2032,5
+hybrid,What are the duties of company directors?,True,15,True,False,0.2,1.7259738445281982,0.037,2196,5
+hybrid,How can a company appoint additional directors?,True,8,True,False,0.5,1.9407198429107666,0.022,2345,4
+hybrid,What are the penalties for late filing of annual r,True,5,True,False,0.8,6.103954315185547,0.036,2025,5

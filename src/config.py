@@ -20,6 +20,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DOCUMENTS_DIR = PROJECT_ROOT / "data" / "documents"
 VECTORSTORE_DIR = PROJECT_ROOT / "data" / "vectorstore"
 
+# ── Auto-ingest / scraping ──────────────────────────────────────
+SCRAPE_URL = os.getenv("SCRAPE_URL", "")
+HASH_REGISTRY_PATH = PROJECT_ROOT / "data" / "hash_registry.json"
+AUTO_INGEST_INTERVAL_HOURS = int(os.getenv("AUTO_INGEST_INTERVAL_HOURS", "24"))
+
 # ── Embedding model ─────────────────────────────────────────────
 EMBEDDING_MODEL_NAME = os.getenv(
     "EMBEDDING_MODEL_NAME",
@@ -50,3 +55,11 @@ LLM_MODEL = os.getenv("LLM_MODEL", "mistral")       # model name at the provider
 
 # -- Shared --------------------------------------------------------
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.2"))
+
+
+#new ones
+# In src/config.py - Just change this one line
+CHUNK_OVERLAP = 50  # Was 200
+
+# Optional: Also reduce chunk size for better precision
+CHUNK_SIZE = 800  

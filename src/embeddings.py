@@ -11,7 +11,7 @@ regardless of how many callers import this.
 
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-from config import EMBEDDING_MODEL_NAME
+from src.config import EMBEDDING_MODEL_NAME
 
 _model = None
 

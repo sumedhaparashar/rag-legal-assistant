@@ -28,32 +28,67 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 
-# ── Make src/ and app/ importable ────────────────────────────────
+# ── Make src/, app/, and scripts/ importable ─────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 sys.path.insert(0, str(PROJECT_ROOT / "app"))
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
-from app.schemas import AskRequest, AskResponse, IngestResponse    # noqa: E402
+from app.schemas import (                                          # noqa: E402
+    AskRequest, AskResponse, IngestResponse, AutoIngestResponse,
+)
 from rag_chain import ask                                          # noqa: E402
 from vectorstore import load_vectorstore, create_vectorstore       # noqa: E402
+from config import AUTO_INGEST_INTERVAL_HOURS                      # noqa: E402
 
 logger = logging.getLogger("rag_legal_assistant")
+
+_scheduler = None  # module-level reference so we can shut it down
 
 
 # ── Startup / shutdown lifecycle ─────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Pre-load the FAISS index at startup (if one exists)."""
+    """Pre-load the FAISS index and start the auto-ingest scheduler."""
+    global _scheduler
+
+    # 1. Pre-load FAISS index
     try:
         load_vectorstore()
         logger.info("FAISS index loaded at startup.")
     except FileNotFoundError:
         logger.warning(
-            "No FAISS index found — call POST /ingest before querying."
+            "No FAISS index found — call POST /ingest or /auto-ingest first."
         )
-    yield                           # app runs
-    # (nothing to clean up)
+
+    # 2. Start background scheduler (if interval > 0)
+    if AUTO_INGEST_INTERVAL_HOURS > 0:
+        try:
+            from apscheduler.schedulers.background import BackgroundScheduler
+            from auto_ingest import run_pipeline
+
+            _scheduler = BackgroundScheduler(daemon=True)
+            _scheduler.add_job(
+                lambda: run_pipeline(skip_scrape=False),
+                trigger="interval",
+                hours=AUTO_INGEST_INTERVAL_HOURS,
+                id="auto_ingest",
+                name="Periodic auto-ingest",
+                replace_existing=True,
+            )
+            _scheduler.start()
+            logger.info(
+                f"Auto-ingest scheduler started — every {AUTO_INGEST_INTERVAL_HOURS}h"
+            )
+        except Exception as exc:
+            logger.warning(f"Could not start auto-ingest scheduler: {exc}")
+
+    yield  # app runs
+
+    # Shutdown
+    if _scheduler is not None:
+        _scheduler.shutdown(wait=False)
 
 
 # ── Configuration ────────────────────────────────────────────────
@@ -136,6 +171,35 @@ async def ingest_documents():
         raise HTTPException(
             status_code=500,
             detail=f"Ingestion failed: {exc}",
+        ) from exc
+
+
+@app.post("/auto-ingest", response_model=AutoIngestResponse)
+async def auto_ingest_documents():
+    """Run the incremental auto-ingest pipeline (hash-based dedup)."""
+    try:
+        # Import here to avoid circular imports during module load
+        from auto_ingest import run_pipeline
+
+        stats = run_pipeline(skip_scrape=False)
+        return AutoIngestResponse(
+            status="success",
+            new_chunks=stats["new_chunks"],
+            reused_chunks=stats["reused_chunks"],
+            pruned_chunks=stats["pruned_chunks"],
+            total_vectors=stats["total_vectors"],
+            elapsed_seconds=stats["elapsed_seconds"],
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No PDFs found: {exc}",
+        ) from exc
+    except Exception as exc:
+        logger.exception("Error during /auto-ingest")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Auto-ingestion failed: {exc}",
         ) from exc
 
 

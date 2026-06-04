@@ -33,3 +33,15 @@ class AskResponse(BaseModel):
 class IngestResponse(BaseModel):
     status: str = "success"
     chunks_indexed: int = 0
+
+
+# ── /auto-ingest ─────────────────────────────────────────────────
+
+class AutoIngestResponse(BaseModel):
+    status: str = "success"
+    new_chunks: int = 0
+    reused_chunks: int = 0
+    pruned_chunks: int = 0
+    total_vectors: int = 0
+    elapsed_seconds: float = 0.0
+

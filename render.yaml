@@ -33,3 +33,8 @@ services:
 
       - key: ALLOWED_ORIGINS
         value: "https://rag-legal-assistant.onrender.com"
+
+      - key: SCRAPE_URL
+        value: ""
+      - key: AUTO_INGEST_INTERVAL_HOURS
+        value: "24"
