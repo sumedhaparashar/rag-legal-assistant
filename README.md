@@ -5,6 +5,9 @@ A **production‑ready Retrieval‑Augmented Generation (RAG) Legal Assistant** 
 The system answers legal questions **strictly based on provided documents**, returns **verifiable citations (file + page)**, and is designed to be **interview‑defensible and cloud‑deployable**.
 
 ---
+<img width="1365" height="573" alt="WhatsApp Image 2026-04-23 at 11 20 20 PM (1)" src="https://github.com/user-attachments/assets/c95ae9a1-0d20-4b3c-b37a-8d67d2bccd36" />
+<img width="1600" height="664" alt="WhatsApp Image 2026-04-23 at 11 20 20 PM" src="https://github.com/user-attachments/assets/d2102230-5114-4683-aad2-25868b38007c" />
+
 
 ## 🚀 Features
 
