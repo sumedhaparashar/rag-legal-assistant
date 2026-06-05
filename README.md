@@ -21,7 +21,7 @@ The system answers legal questions **strictly based on provided documents**, ret
 * 🧪 **CLI ingestion script** for rebuilding the index
 
 ---
-
+For Implementation Demo of the project : https://youtu.be/gG-0inAdGJA
 ## 🧱 Tech Stack
 
 | Layer         | Technology                               | Reason                              |
