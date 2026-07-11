@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Analytics Dashboard — Corporate Law Assistant usage metrics, question trends, and popular legal topics.">
+  <title>Analytics — Corporate Law Assistant</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg-gradient" aria-hidden="true"></div>
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <header class="app-header" role="banner">
+    <div class="header-left">
+      <span class="header-logo" aria-hidden="true">⚖️</span>
+      <span class="header-title">Corporate Law Assistant</span>
+    </div>
+    <nav class="header-nav" role="navigation" aria-label="Main navigation">
+      <a href="/ui/index.html" class="nav-link" id="nav-chat">Chat</a>
+      <a href="/ui/analytics.html" class="nav-link active" id="nav-analytics" aria-current="page">Analytics</a>
+    </nav>
+    <div class="header-right">
+      <span class="user-email" id="user-email" aria-label="Logged in user"></span>
+      <button class="btn-signout" id="btn-signout" type="button" aria-label="Sign out">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- ── Analytics Content ──────────────────────────────────── -->
+  <main class="page-analytics" role="main">
+    <div class="analytics-container">
+      <h1 class="analytics-title">Dashboard</h1>
+      <p class="analytics-subtitle">Real-time usage metrics and insights</p>
+
+      <!-- Metric Cards -->
+      <div class="metrics-grid" id="metrics-grid">
+        <div class="metric-card" id="card-total-users">
+          <div class="metric-icon" aria-hidden="true">👥</div>
+          <div class="metric-value" id="metric-total-users">
+            <div class="skeleton skeleton-value"></div>
+          </div>
+          <div class="metric-label">Total Users</div>
+        </div>
+        <div class="metric-card" id="card-active-today">
+          <div class="metric-icon" aria-hidden="true">📊</div>
+          <div class="metric-value" id="metric-active-today">
+            <div class="skeleton skeleton-value"></div>
+          </div>
+          <div class="metric-label">Active Today</div>
+        </div>
+        <div class="metric-card" id="card-total-questions">
+          <div class="metric-icon" aria-hidden="true">💬</div>
+          <div class="metric-value" id="metric-total-questions">
+            <div class="skeleton skeleton-value"></div>
+          </div>
+          <div class="metric-label">Total Questions</div>
+        </div>
+        <div class="metric-card" id="card-weekly-questions">
+          <div class="metric-icon" aria-hidden="true">📈</div>
+          <div class="metric-value" id="metric-weekly-questions">
+            <div class="skeleton skeleton-value"></div>
+          </div>
+          <div class="metric-label">This Week</div>
+        </div>
+        <div class="metric-card" id="card-avg-response">
+          <div class="metric-icon" aria-hidden="true">⚡</div>
+          <div class="metric-value" id="metric-avg-response">
+            <div class="skeleton skeleton-value"></div>
+          </div>
+          <div class="metric-label">Avg Response Time</div>
+        </div>
+        <div class="metric-card" id="card-uptime">
+          <div class="metric-icon" aria-hidden="true">🟢</div>
+          <div class="metric-value" id="metric-uptime">
+            <div class="skeleton skeleton-value"></div>
+          </div>
+          <div class="metric-label">Server Uptime</div>
+        </div>
+      </div>
+
+      <!-- Questions Chart -->
+      <section class="analytics-section" id="section-chart">
+        <h2 class="section-title">📊 Questions This Week</h2>
+        <div class="bar-chart" id="bar-chart" aria-label="Daily question counts bar chart">
+          <!-- Skeleton bars -->
+          <div class="bar-item"><div class="bar-value">&nbsp;</div><div class="bar-fill skeleton skeleton-bar" style="height:40%"></div><div class="bar-label">—</div></div>
+          <div class="bar-item"><div class="bar-value">&nbsp;</div><div class="bar-fill skeleton skeleton-bar" style="height:60%"></div><div class="bar-label">—</div></div>
+          <div class="bar-item"><div class="bar-value">&nbsp;</div><div class="bar-fill skeleton skeleton-bar" style="height:30%"></div><div class="bar-label">—</div></div>
+          <div class="bar-item"><div class="bar-value">&nbsp;</div><div class="bar-fill skeleton skeleton-bar" style="height:80%"></div><div class="bar-label">—</div></div>
+          <div class="bar-item"><div class="bar-value">&nbsp;</div><div class="bar-fill skeleton skeleton-bar" style="height:50%"></div><div class="bar-label">—</div></div>
+          <div class="bar-item"><div class="bar-value">&nbsp;</div><div class="bar-fill skeleton skeleton-bar" style="height:70%"></div><div class="bar-label">—</div></div>
+          <div class="bar-item"><div class="bar-value">&nbsp;</div><div class="bar-fill skeleton skeleton-bar" style="height:45%"></div><div class="bar-label">—</div></div>
+        </div>
+      </section>
+
+      <!-- Popular Topics -->
+      <section class="analytics-section" id="section-topics">
+        <h2 class="section-title">🔥 Popular Legal Topics</h2>
+        <div class="topics-list" id="topics-list" role="list" aria-label="Popular topics">
+          <!-- Skeleton topics -->
+          <div class="topic-item">
+            <div class="topic-rank skeleton" style="width:28px;height:28px">&nbsp;</div>
+            <div class="topic-info"><div class="skeleton skeleton-text" style="width:70%"></div><div class="topic-bar-wrapper"><div class="topic-bar-fill skeleton" style="width:0%"></div></div></div>
+            <div class="topic-count skeleton" style="width:40px">&nbsp;</div>
+          </div>
+          <div class="topic-item">
+            <div class="topic-rank skeleton" style="width:28px;height:28px">&nbsp;</div>
+            <div class="topic-info"><div class="skeleton skeleton-text" style="width:55%"></div><div class="topic-bar-wrapper"><div class="topic-bar-fill skeleton" style="width:0%"></div></div></div>
+            <div class="topic-count skeleton" style="width:40px">&nbsp;</div>
+          </div>
+          <div class="topic-item">
+            <div class="topic-rank skeleton" style="width:28px;height:28px">&nbsp;</div>
+            <div class="topic-info"><div class="skeleton skeleton-text" style="width:60%"></div><div class="topic-bar-wrapper"><div class="topic-bar-fill skeleton" style="width:0%"></div></div></div>
+            <div class="topic-count skeleton" style="width:40px">&nbsp;</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" role="status" aria-live="polite"></div>
+
+  <!-- CDN Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    (() => {
+      // ── State ──
+      let supabaseClient = null;
+      let authEnabled = false;
+      let currentUser = null;
+      let refreshInterval = null;
+
+      // ── Helpers ──
+      function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+      }
+
+      function formatNumber(n) {
+        if (n == null) return '—';
+        return n.toLocaleString();
+      }
+
+      function formatUptime(seconds) {
+        if (seconds == null) return '—';
+        const d = Math.floor(seconds / 86400);
+        const h = Math.floor((seconds % 86400) / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const parts = [];
+        if (d > 0) parts.push(`${d}d`);
+        if (h > 0) parts.push(`${h}h`);
+        parts.push(`${m}m`);
+        return parts.join(' ');
+      }
+
+      function formatResponseTime(ms) {
+        if (ms == null) return '—';
+        return (ms / 1000).toFixed(2) + 's';
+      }
+
+      function getDayLabel(dateStr) {
+        try {
+          const date = new Date(dateStr);
+          return date.toLocaleDateString('en-US', { weekday: 'short' });
+        } catch {
+          return dateStr;
+        }
+      }
+
+      // ── Auth ──
+      async function initAuth() {
+        try {
+          const res = await fetch('/api/auth/config');
+          const config = await res.json();
+
+          if (!config.supabase_url) {
+            authEnabled = false;
+            updateAuthUI();
+            return;
+          }
+
+          authEnabled = true;
+          supabaseClient = window.supabase.createClient(config.supabase_url, config.supabase_anon_key);
+
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (!session) {
+            window.location.replace('/ui/auth.html');
+            return;
+          }
+
+          currentUser = session.user;
+          updateAuthUI();
+
+          supabaseClient.auth.onAuthStateChange((event) => {
+            if (event === 'SIGNED_OUT') {
+              window.location.replace('/ui/auth.html');
+            }
+          });
+        } catch (err) {
+          console.warn('Auth not available:', err);
+          authEnabled = false;
+          updateAuthUI();
+        }
+      }
+
+      function updateAuthUI() {
+        const emailEl = document.getElementById('user-email');
+        const signOutBtn = document.getElementById('btn-signout');
+        if (authEnabled && currentUser) {
+          emailEl.textContent = currentUser.email || '';
+          emailEl.title = currentUser.email || '';
+          signOutBtn.classList.remove('hidden');
+        } else if (!authEnabled) {
+          emailEl.textContent = '';
+          signOutBtn.classList.add('hidden');
+        }
+      }
+
+      async function getAuthHeaders() {
+        if (!authEnabled || !supabaseClient) return {};
+        try {
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (session?.access_token) {
+            return { 'Authorization': `Bearer ${session.access_token}` };
+          }
+        } catch {}
+        return {};
+      }
+
+      async function signOut() {
+        if (supabaseClient) await supabaseClient.auth.signOut();
+        window.location.replace('/ui/auth.html');
+      }
+
+      // ── Data Fetching ──
+      async function fetchAnalytics() {
+        try {
+          const headers = await getAuthHeaders();
+          const res = await fetch('/api/analytics', { headers });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          renderMetrics(data);
+          renderChart(data.daily_question_counts || []);
+          renderTopics(data.top_topics || []);
+        } catch (err) {
+          console.error('Failed to fetch analytics:', err);
+          showToast('Failed to load analytics data', 'error');
+        }
+      }
+
+      // ── Rendering ──
+      function renderMetrics(data) {
+        setMetric('metric-total-users', formatNumber(data.total_users));
+        setMetric('metric-active-today', formatNumber(data.daily_active_users));
+        setMetric('metric-total-questions', formatNumber(data.total_questions));
+        setMetric('metric-weekly-questions', formatNumber(data.weekly_questions));
+        setMetric('metric-avg-response', formatResponseTime(data.avg_response_time_ms));
+        setMetric('metric-uptime', formatUptime(data.uptime_seconds));
+      }
+
+      function setMetric(id, value) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = value;
+        el.classList.remove('skeleton');
+      }
+
+      function renderChart(dailyCounts) {
+        const chart = document.getElementById('bar-chart');
+        if (!chart) return;
+
+        if (!dailyCounts.length) {
+          chart.innerHTML = '<p class="text-muted text-center" style="width:100%;padding:40px 0;">No data available for this week</p>';
+          return;
+        }
+
+        const maxCount = Math.max(...dailyCounts.map(d => d.count), 1);
+
+        chart.innerHTML = dailyCounts.map(day => {
+          const pct = (day.count / maxCount) * 100;
+          const label = getDayLabel(day.date);
+          return `
+            <div class="bar-item">
+              <div class="bar-value">${day.count}</div>
+              <div class="bar-fill" style="height: ${Math.max(pct, 3)}%" title="${day.date}: ${day.count} questions"></div>
+              <div class="bar-label">${escapeHtml(label)}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderTopics(topics) {
+        const list = document.getElementById('topics-list');
+        if (!list) return;
+
+        if (!topics.length) {
+          list.innerHTML = '<p class="text-muted" style="padding:20px 0;">No topics data available yet</p>';
+          return;
+        }
+
+        const maxCount = Math.max(...topics.map(t => t.count), 1);
+
+        list.innerHTML = topics.map((topic, i) => {
+          const pct = (topic.count / maxCount) * 100;
+          return `
+            <div class="topic-item" role="listitem">
+              <div class="topic-rank">${i + 1}</div>
+              <div class="topic-info">
+                <div class="topic-name">${escapeHtml(topic.topic)}</div>
+                <div class="topic-bar-wrapper">
+                  <div class="topic-bar-fill" style="width: ${pct}%"></div>
+                </div>
+              </div>
+              <div class="topic-count">${formatNumber(topic.count)}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // ── Toast ──
+      function showToast(message, type = 'error') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        const icon = type === 'success' ? '✓' : type === 'warning' ? '⚠' : '✕';
+        toast.innerHTML = `<span>${icon}</span><span>${escapeHtml(message)}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+          toast.classList.add('removing');
+          setTimeout(() => toast.remove(), 300);
+        }, 5000);
+      }
+
+      // ── Init ──
+      async function init() {
+        await initAuth();
+        await fetchAnalytics();
+
+        // Auto-refresh every 60 seconds
+        refreshInterval = setInterval(fetchAnalytics, 60000);
+
+        // Sign out button
+        const signOutBtn = document.getElementById('btn-signout');
+        if (signOutBtn) {
+          signOutBtn.addEventListener('click', signOut);
+        }
+      }
+
+      // Clean up on page unload
+      window.addEventListener('beforeunload', () => {
+        if (refreshInterval) clearInterval(refreshInterval);
+      });
+
+      // Boot
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>

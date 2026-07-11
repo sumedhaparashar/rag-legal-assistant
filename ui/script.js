@@ -1,260 +1,514 @@
-/**
- * Legal RAG Assistant – Frontend Logic
- *
- * Connects to the FastAPI backend, manages conversation history in-memory,
- * and renders a ChatGPT-style chat interface.
- */
+/* ============================================================
+   Corporate Law Assistant — Main Application Script
+   Modules: Auth · Chat · UI
+   ============================================================ */
 
-// ── API configuration ────────────────────────────────
-// When served via FastAPI's /ui mount the origin is the same server,
-// so a simple relative path works in both local dev and production.
-const API_URL = "/ask";
+// ── Global State ────────────────────────────────────────────
+let supabaseClient = null;
+let currentUser = null;
+let authEnabled = false;
+let isLoading = false;
+let chatHistory = [];
+let lastQuestion = '';
 
-// ── DOM references ───────────────────────────────────
-const form = document.getElementById("form");
-const input = document.getElementById("input");
-const sendBtn = document.getElementById("sendBtn");
-const chat = document.getElementById("chat");
-const welcome = document.getElementById("welcome");
+// ══════════════════════════════════════════════════════════════
+//  AUTH MODULE
+// ══════════════════════════════════════════════════════════════
 
-// ── Conversation history (kept for future multi-turn) ──
-const history = [];
+const Auth = {
+  /**
+   * Fetch /api/auth/config and initialize Supabase if configured.
+   * Returns true if auth is enabled, false otherwise.
+   */
+  async init() {
+    try {
+      const res = await fetch('/api/auth/config');
+      if (!res.ok) throw new Error('Config fetch failed');
+      const config = await res.json();
 
-// ── Suggestion chips (auto-fill the input) ───────────
-document.getElementById("suggestions").addEventListener("click", (e) => {
-  const chip = e.target.closest(".chip");
-  if (!chip) return;
-  input.value = chip.dataset.q;
-  input.focus();
-});
+      if (!config.supabase_url) {
+        authEnabled = false;
+        UI.updateAuthUI();
+        return false;
+      }
 
-// ── Form submit handler ─────────────────────────────
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+      authEnabled = true;
+      supabaseClient = window.supabase.createClient(
+        config.supabase_url,
+        config.supabase_anon_key
+      );
 
-  const question = input.value.trim();
-  if (!question) return;               // guard: empty input
+      // Listen for auth state changes
+      supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT') {
+          currentUser = null;
+          window.location.replace('/ui/auth.html');
+        }
+        if (event === 'SIGNED_IN' && session) {
+          currentUser = session.user;
+          UI.updateAuthUI();
+        }
+      });
 
-  // Remove the welcome screen on the first question
-  if (welcome && welcome.parentNode) {
-    welcome.remove();
+      return true;
+    } catch (err) {
+      console.warn('Auth config not available, running without auth:', err);
+      authEnabled = false;
+      UI.updateAuthUI();
+      return false;
+    }
+  },
+
+  /**
+   * Check current session. Redirect to auth.html if not authenticated.
+   */
+  async checkSession() {
+    if (!authEnabled || !supabaseClient) return true;
+
+    try {
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      if (error) throw error;
+
+      if (!session) {
+        window.location.replace('/ui/auth.html');
+        return false;
+      }
+
+      currentUser = session.user;
+      UI.updateAuthUI();
+      return true;
+    } catch (err) {
+      console.error('Session check failed:', err);
+      window.location.replace('/ui/auth.html');
+      return false;
+    }
+  },
+
+  /**
+   * Returns authorization headers for API calls.
+   */
+  async getAuthHeaders() {
+    if (!authEnabled || !supabaseClient) return {};
+
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session?.access_token) {
+        return { 'Authorization': `Bearer ${session.access_token}` };
+      }
+    } catch (err) {
+      console.error('Failed to get auth headers:', err);
+    }
+    return {};
+  },
+
+  /**
+   * Sign out and redirect.
+   */
+  async signOut() {
+    if (supabaseClient) {
+      await supabaseClient.auth.signOut();
+    }
+    currentUser = null;
+    window.location.replace('/ui/auth.html');
   }
+};
 
-  // Save to history & render the user bubble
-  history.push({ role: "user", content: question });
-  renderMessage(question, "user");
+// ══════════════════════════════════════════════════════════════
+//  CHAT MODULE
+// ══════════════════════════════════════════════════════════════
 
-  // Reset input and show loading state
-  input.value = "";
-  setLoading(true);
-  const loader = showLoader();
+const Chat = {
+  /**
+   * Send a question to the /ask endpoint.
+   */
+  async askQuestion(question) {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(await Auth.getAuthHeaders())
+    };
 
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
+    const res = await fetch('/ask', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ question })
     });
 
-    // Remove loader before rendering anything
-    loader.remove();
-
     if (!res.ok) {
-      // Server returned an HTTP error (e.g. 500, 503)
-      const errBody = await res.json().catch(() => null);
-      const detail = errBody?.detail || `Status ${res.status}`;
-      throw new Error(detail);
+      const errBody = await res.text();
+      let msg = `Server error (${res.status})`;
+      try {
+        const parsed = JSON.parse(errBody);
+        msg = parsed.detail || parsed.message || msg;
+      } catch (_) {}
+      throw new Error(msg);
     }
 
-    const data = await res.json();
+    return await res.json();
+  },
 
-    // Guard: empty / missing answer
-    if (!data.answer) {
-      throw new Error("The server returned an empty answer.");
+  /**
+   * Handle form submission.
+   */
+  async handleSubmit(e) {
+    if (e) e.preventDefault();
+
+    const input = document.getElementById('question-input');
+    const question = input.value.trim();
+    if (!question || isLoading) return;
+
+    lastQuestion = question;
+    input.value = '';
+    UI.updateSendButton();
+
+    // Hide welcome state
+    UI.hideWelcome();
+
+    // Render user message
+    UI.renderUserMessage(question);
+    UI.scrollToBottom();
+
+    // Show loading
+    isLoading = true;
+    UI.setInputDisabled(true);
+    UI.showLoading();
+    UI.scrollToBottom();
+
+    try {
+      const data = await Chat.askQuestion(question);
+      UI.hideLoading();
+      UI.renderAssistantMessage(data);
+      Chat.addToHistory('user', question);
+      Chat.addToHistory('assistant', data.answer, data.sources);
+    } catch (err) {
+      UI.hideLoading();
+      UI.renderError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      isLoading = false;
+      UI.setInputDisabled(false);
+      UI.scrollToBottom();
+      // Auto-focus input
+      input.focus();
+    }
+  },
+
+  /**
+   * Track conversation history.
+   */
+  addToHistory(role, content, sources = null) {
+    chatHistory.push({ role, content, sources, timestamp: Date.now() });
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
+//  UI MODULE
+// ══════════════════════════════════════════════════════════════
+
+const UI = {
+  /**
+   * Render a user message bubble.
+   */
+  renderUserMessage(text) {
+    const container = document.getElementById('chat-messages');
+    const msg = document.createElement('div');
+    msg.className = 'message message-user';
+    msg.innerHTML = `
+      <div class="message-content">
+        <div class="message-bubble">${UI.escapeHtml(text)}</div>
+      </div>
+    `;
+    container.appendChild(msg);
+  },
+
+  /**
+   * Render an assistant message with markdown + source cards.
+   */
+  renderAssistantMessage(data) {
+    const container = document.getElementById('chat-messages');
+    const msg = document.createElement('div');
+    msg.className = 'message message-assistant';
+
+    // Render markdown safely
+    const rawHtml = marked.parse(data.answer || '');
+    const cleanHtml = DOMPurify.sanitize(rawHtml);
+
+    let sourcesHtml = '';
+    if (data.sources && data.sources.length > 0) {
+      sourcesHtml = UI.renderSourceCards(data.sources);
     }
 
-    // Save to history & render assistant response with sources
-    history.push({ role: "assistant", content: data.answer, sources: data.sources });
-    renderAssistant(data);
+    msg.innerHTML = `
+      <div class="message-avatar" aria-hidden="true">⚖️</div>
+      <div class="message-content">
+        <div class="message-bubble markdown-body">${cleanHtml}</div>
+        ${sourcesHtml}
+      </div>
+    `;
 
-  } catch (err) {
-    loader.remove();
-    renderMessage(
-      `⚠ ${err.message || "Network error — is the backend running?"}`,
-      "error"
-    );
-  } finally {
-    setLoading(false);
+    container.appendChild(msg);
+
+    // Attach source toggle handler
+    const toggle = msg.querySelector('.sources-toggle');
+    if (toggle) {
+      toggle.addEventListener('click', () => {
+        const list = msg.querySelector('.sources-list');
+        const isExpanded = toggle.classList.contains('expanded');
+        toggle.classList.toggle('expanded');
+        list.classList.toggle('visible');
+        toggle.setAttribute('aria-expanded', !isExpanded);
+      });
+    }
+  },
+
+  /**
+   * Build source cards HTML.
+   */
+  renderSourceCards(sources) {
+    const sourceItems = sources.map((src, i) => {
+      const relevance = src.relevance_score != null
+        ? `<span class="source-relevance">${Math.round(src.relevance_score * 100)}%</span>`
+        : '';
+      const page = src.page != null ? `<span class="source-page">Page ${src.page}</span>` : '';
+      const snippet = src.snippet ? `<p class="source-snippet">${UI.escapeHtml(src.snippet)}</p>` : '';
+
+      return `
+        <div class="source-card">
+          <div class="source-header">
+            <span class="source-icon">📄</span>
+            <span class="source-filename" title="${UI.escapeHtml(src.file || 'Unknown')}">${UI.escapeHtml(src.file || 'Unknown source')}</span>
+            ${page}
+            ${relevance}
+          </div>
+          ${snippet}
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="sources-container">
+        <button class="sources-toggle" aria-expanded="false" aria-label="Toggle source references">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+          ${sources.length} source${sources.length !== 1 ? 's' : ''} referenced
+        </button>
+        <div class="sources-list" role="list" aria-label="Source documents">
+          ${sourceItems}
+        </div>
+      </div>
+    `;
+  },
+
+  /**
+   * Render an error message with retry option.
+   */
+  renderError(message) {
+    const container = document.getElementById('chat-messages');
+    const msg = document.createElement('div');
+    msg.className = 'message message-assistant message-error';
+    msg.innerHTML = `
+      <div class="message-avatar" aria-hidden="true">⚠️</div>
+      <div class="message-content">
+        <div class="message-bubble">
+          <p>${UI.escapeHtml(message)}</p>
+          <button class="btn-retry" id="btn-retry" type="button" aria-label="Retry question">
+            ↻ Retry
+          </button>
+        </div>
+      </div>
+    `;
+    container.appendChild(msg);
+
+    // Attach retry handler
+    const retryBtn = msg.querySelector('.btn-retry');
+    retryBtn.addEventListener('click', () => {
+      // Remove error message
+      msg.remove();
+      // Re-ask last question
+      if (lastQuestion) {
+        const input = document.getElementById('question-input');
+        input.value = lastQuestion;
+        Chat.handleSubmit();
+      }
+    });
+  },
+
+  /**
+   * Show loading indicator.
+   */
+  showLoading() {
+    const container = document.getElementById('chat-messages');
+    const loader = document.createElement('div');
+    loader.className = 'loading-indicator';
+    loader.id = 'loading-indicator';
+    loader.innerHTML = `
+      <div class="message-avatar" aria-hidden="true">⚖️</div>
+      <div class="loading-bubble">
+        <div class="loading-dots" aria-label="Loading">
+          <span></span><span></span><span></span>
+        </div>
+        <span class="loading-text">Analyzing legal documents…</span>
+      </div>
+    `;
+    container.appendChild(loader);
+  },
+
+  /**
+   * Hide loading indicator.
+   */
+  hideLoading() {
+    const loader = document.getElementById('loading-indicator');
+    if (loader) loader.remove();
+  },
+
+  /**
+   * Scroll chat to bottom smoothly.
+   */
+  scrollToBottom() {
+    const area = document.getElementById('chat-area');
+    requestAnimationFrame(() => {
+      area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
+    });
+  },
+
+  /**
+   * Hide welcome state.
+   */
+  hideWelcome() {
+    const welcome = document.getElementById('welcome-state');
+    if (welcome) {
+      welcome.style.display = 'none';
+    }
+  },
+
+  /**
+   * Handle chip click.
+   */
+  handleChipClick(e) {
+    const chip = e.target.closest('.suggestion-chip');
+    if (!chip) return;
+    const question = chip.dataset.question;
+    if (question) {
+      const input = document.getElementById('question-input');
+      input.value = question;
+      Chat.handleSubmit();
+    }
+  },
+
+  /**
+   * Enable/disable input and send button during loading.
+   */
+  setInputDisabled(disabled) {
+    const input = document.getElementById('question-input');
+    const btn = document.getElementById('btn-send');
+    input.disabled = disabled;
+    btn.disabled = disabled;
+  },
+
+  /**
+   * Update send button state based on input content.
+   */
+  updateSendButton() {
+    const input = document.getElementById('question-input');
+    const btn = document.getElementById('btn-send');
+    btn.disabled = !input.value.trim() || isLoading;
+  },
+
+  /**
+   * Update header with user info.
+   */
+  updateAuthUI() {
+    const emailEl = document.getElementById('user-email');
+    const signOutBtn = document.getElementById('btn-signout');
+
+    if (!emailEl || !signOutBtn) return;
+
+    if (authEnabled && currentUser) {
+      emailEl.textContent = currentUser.email || '';
+      emailEl.title = currentUser.email || '';
+      signOutBtn.classList.remove('hidden');
+    } else if (!authEnabled) {
+      emailEl.textContent = '';
+      signOutBtn.classList.add('hidden');
+    }
+  },
+
+  /**
+   * Show a toast notification.
+   */
+  showToast(message, type = 'error') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    const icon = type === 'success' ? '✓' : type === 'warning' ? '⚠' : '✕';
+    toast.innerHTML = `<span>${icon}</span><span>${UI.escapeHtml(message)}</span>`;
+    container.appendChild(toast);
+
+    // Auto-remove after 5s
+    setTimeout(() => {
+      toast.classList.add('removing');
+      setTimeout(() => toast.remove(), 300);
+    }, 5000);
+  },
+
+  /**
+   * Escape HTML to prevent XSS.
+   */
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
+//  INITIALIZATION
+// ══════════════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // ── Auth ──
+  const authIsEnabled = await Auth.init();
+  if (authIsEnabled) {
+    const sessionOk = await Auth.checkSession();
+    if (!sessionOk) return; // Redirecting…
+  }
+
+  // ── DOM References ──
+  const form = document.getElementById('question-form');
+  const input = document.getElementById('question-input');
+  const signOutBtn = document.getElementById('btn-signout');
+  const welcomeChips = document.getElementById('welcome-state');
+
+  // ── Form Submission ──
+  if (form) {
+    form.addEventListener('submit', (e) => Chat.handleSubmit(e));
+  }
+
+  // ── Input Change → Enable/Disable Send ──
+  if (input) {
+    input.addEventListener('input', () => UI.updateSendButton());
+    // Allow Enter to submit (default form behavior)
     input.focus();
   }
-});
 
-// ── Enter-to-send (Shift+Enter reserved for future textarea) ──
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    form.requestSubmit();
-  }
-});
-
-// ═══════════════════════════════════════════════════════
-//  Rendering helpers
-// ═══════════════════════════════════════════════════════
-
-/**
- * Render a simple text message (user or error).
- * @param {string} text  – message content
- * @param {"user"|"error"} role
- */
-function renderMessage(text, role) {
-  const group = document.createElement("div");
-  group.className = `msg-group ${role}`;
-
-  // Role label
-  const label = document.createElement("div");
-  label.className = "msg-role";
-  label.textContent = role === "user" ? "You" : "Error";
-  group.appendChild(label);
-
-  // Bubble
-  const bubble = document.createElement("div");
-  bubble.className = "bubble";
-  bubble.textContent = text;
-  group.appendChild(bubble);
-
-  // Timestamp
-  group.appendChild(makeTimestamp());
-
-  chat.appendChild(group);
-  scrollToBottom();
-}
-
-/**
- * Render the assistant's answer along with an optional sources card.
- * @param {{ answer: string, sources: Array }} data
- */
-function renderAssistant(data) {
-  const group = document.createElement("div");
-  group.className = "msg-group assistant";
-
-  // Role label
-  const label = document.createElement("div");
-  label.className = "msg-role";
-  label.textContent = "Assistant";
-  group.appendChild(label);
-
-  // Answer bubble
-  const bubble = document.createElement("div");
-  bubble.className = "bubble";
-  bubble.textContent = data.answer;
-
-  // Sources card (rendered inside the bubble)
-  if (data.sources && data.sources.length > 0) {
-    bubble.appendChild(buildSourcesCard(data.sources));
+  // ── Sign Out ──
+  if (signOutBtn) {
+    signOutBtn.addEventListener('click', () => Auth.signOut());
   }
 
-  group.appendChild(bubble);
+  // ── Suggestion Chips ──
+  if (welcomeChips) {
+    welcomeChips.addEventListener('click', (e) => UI.handleChipClick(e));
+  }
 
-  // Timestamp
-  group.appendChild(makeTimestamp());
-
-  chat.appendChild(group);
-  scrollToBottom();
-}
-
-/**
- * Build a sources card element from the sources array.
- * @param {Array<{file:string, page:number, snippet:string}>} sources
- * @returns {HTMLElement}
- */
-function buildSourcesCard(sources) {
-  const card = document.createElement("div");
-  card.className = "sources-card";
-
-  // Heading with a small icon
-  const heading = document.createElement("div");
-  heading.className = "sources-heading";
-  heading.innerHTML =
-    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-       <polyline points="14 2 14 8 20 8"/>
-     </svg>
-     Sources (${sources.length})`;
-  card.appendChild(heading);
-
-  // Individual source items
-  sources.forEach((src) => {
-    const item = document.createElement("div");
-    item.className = "src-item";
-
-    // File name
-    const file = document.createElement("span");
-    file.className = "src-file";
-    file.textContent = src.file || "Unknown file";
-    item.appendChild(file);
-
-    // Page number
-    if (src.page != null) {
-      const page = document.createElement("span");
-      page.className = "src-page";
-      page.textContent = `— p. ${src.page}`;
-      item.appendChild(page);
-    }
-
-    // Snippet
-    if (src.snippet) {
-      const snippet = document.createElement("div");
-      snippet.className = "src-snippet";
-      snippet.textContent = `"${src.snippet}"`;
-      item.appendChild(snippet);
-    }
-
-    card.appendChild(item);
-  });
-
-  return card;
-}
-
-// ── Loading dots ────────────────────────────────────
-function showLoader() {
-  const group = document.createElement("div");
-  group.className = "msg-group loader-group";
-
-  const label = document.createElement("div");
-  label.className = "msg-role";
-  label.textContent = "Assistant";
-  label.style.color = "var(--green)";
-  group.appendChild(label);
-
-  const loader = document.createElement("div");
-  loader.className = "loader";
-  loader.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-  group.appendChild(loader);
-
-  chat.appendChild(group);
-  scrollToBottom();
-  return group;
-}
-
-// ── Timestamp helper ────────────────────────────────
-function makeTimestamp() {
-  const el = document.createElement("div");
-  el.className = "msg-time";
-  const now = new Date();
-  el.textContent = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  return el;
-}
-
-// ── Toggle loading state ────────────────────────────
-function setLoading(on) {
-  sendBtn.disabled = on;
-  input.disabled = on;
-}
-
-// ── Scroll chat to bottom ───────────────────────────
-function scrollToBottom() {
-  requestAnimationFrame(() => {
-    chat.scrollTop = chat.scrollHeight;
-  });
-}
+  // ── Configure marked.js ──
+  if (typeof marked !== 'undefined') {
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+      headerIds: false,
+      mangle: false
+    });
+  }
+});

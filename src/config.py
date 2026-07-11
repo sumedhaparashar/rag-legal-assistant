@@ -23,7 +23,7 @@ VECTORSTORE_DIR = PROJECT_ROOT / "data" / "vectorstore"
 # ── Auto-ingest / scraping ──────────────────────────────────────
 SCRAPE_URL = os.getenv("SCRAPE_URL", "")
 HASH_REGISTRY_PATH = PROJECT_ROOT / "data" / "hash_registry.json"
-AUTO_INGEST_INTERVAL_HOURS = int(os.getenv("AUTO_INGEST_INTERVAL_HOURS", "24"))
+AUTO_INGEST_INTERVAL_HOURS = int(os.getenv("AUTO_INGEST_INTERVAL_HOURS", "0"))
 
 # ── Embedding model ─────────────────────────────────────────────
 EMBEDDING_MODEL_NAME = os.getenv(
@@ -40,7 +40,7 @@ RETRIEVER_K = int(os.getenv("RETRIEVER_K", "5"))
 
 # ── LLM provider selection ──────────────────────────────────────
 # Supported values: "ollama", "openai", "groq", "together"
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq")
 
 # -- Ollama (local) -----------------------------------------------
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
@@ -51,15 +51,29 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
 #    and API key differ.
 LLM_API_KEY = os.getenv("LLM_API_KEY", "")
 LLM_API_BASE = os.getenv("LLM_API_BASE", "")       # auto-set per provider if blank
-LLM_MODEL = os.getenv("LLM_MODEL", "mistral")       # model name at the provider
+LLM_MODEL = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
 
 # -- Shared --------------------------------------------------------
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.2"))
 
+# ── Supabase Auth ────────────────────────────────────────────────
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
 
-#new ones
-# In src/config.py - Just change this one line
-CHUNK_OVERLAP = 50  # Was 200
+# ── Analytics ────────────────────────────────────────────────────
+ANALYTICS_DB_PATH = PROJECT_ROOT / "data" / "analytics.db"
 
-# Optional: Also reduce chunk size for better precision
-CHUNK_SIZE = 800  
+# ── Allowed CORS Origins ────────────────────────────────────────
+_default_origins = (
+    "http://localhost,http://localhost:8000,"
+    "http://127.0.0.1,http://127.0.0.1:8000"
+)
+ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv("ALLOWED_ORIGINS", _default_origins).split(",")
+    if o.strip()
+]
+
+# ── Logging ──────────────────────────────────────────────────────
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()

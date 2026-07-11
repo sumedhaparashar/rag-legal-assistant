@@ -2,28 +2,28 @@
 services:
   - type: web
     name: rag-legal-assistant
-    runtime: python
+    runtime: docker
     plan: free
+    dockerfilePath: ./Dockerfile
 
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
 
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.11.9"
-
+      # ── LLM (Groq) ──────────────────────────────────────────
       - key: LLM_PROVIDER
         value: groq
       - key: LLM_API_KEY
         sync: false
       - key: LLM_MODEL
-        value: mixtral-8x7b-32768
+        value: llama-3.3-70b-versatile
       - key: LLM_TEMPERATURE
         value: "0.2"
 
+      # ── Embedding model ──────────────────────────────────────
       - key: EMBEDDING_MODEL_NAME
         value: sentence-transformers/all-MiniLM-L6-v2
 
+      # ── Retriever ────────────────────────────────────────────
       - key: RETRIEVER_K
         value: "5"
       - key: CHUNK_SIZE
@@ -31,10 +31,26 @@ services:
       - key: CHUNK_OVERLAP
         value: "200"
 
+      # ── Supabase Auth ────────────────────────────────────────
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+
+      # ── CORS ─────────────────────────────────────────────────
       - key: ALLOWED_ORIGINS
         value: "https://rag-legal-assistant.onrender.com"
 
+      # ── Auto-ingest (disabled by default) ────────────────────
       - key: SCRAPE_URL
         value: ""
       - key: AUTO_INGEST_INTERVAL_HOURS
-        value: "24"
+        value: "0"
+
+      # ── Performance ──────────────────────────────────────────
+      - key: MALLOC_ARENA_MAX
+        value: "2"
+      - key: LOG_LEVEL
+        value: "INFO"

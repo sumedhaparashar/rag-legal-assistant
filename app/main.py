@@ -1,47 +1,76 @@
 """
-FastAPI backend for the RAG Legal Assistant.
+FastAPI backend for the Corporate Law Assistant.
 
 Endpoints
 ─────────
-  POST /ask      — answer a legal question with source citations
-  POST /ingest   — (re)build the FAISS index from PDFs in data/documents/
+  GET  /                   — redirect to the chat UI
+  GET  /health             — health check (public)
+  GET  /api/auth/config    — Supabase public config (public)
+  POST /ask                — answer a legal question (auth required)
+  POST /ingest             — rebuild FAISS index (admin, not exposed in UI)
+  POST /auto-ingest        — incremental ingest (admin, not exposed in UI)
+  GET  /api/analytics      — usage analytics (auth required)
 
 Startup behaviour
 ─────────────────
-  On application boot we attempt to pre-load the FAISS index into memory
-  so the first /ask request doesn't pay the deserialization cost.  If the
-  index doesn't exist yet, the app still starts — /ingest must be called
-  first.
+  On boot: load the FAISS index + embedding model into memory,
+  initialise the analytics database, and optionally start the
+  auto-ingest background scheduler.
 
 Run locally:
   uvicorn app.main:app --reload --port 8000
 """
 
+import logging
 import os
 import sys
-import logging
-from pathlib import Path
+import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 # ── Make src/, app/, and scripts/ importable ─────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
-sys.path.insert(0, str(PROJECT_ROOT / "app"))
-sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+for sub in ("src", "app", "scripts"):
+    _p = str(PROJECT_ROOT / sub)
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-from app.schemas import (                                          # noqa: E402
-    AskRequest, AskResponse, IngestResponse, AutoIngestResponse,
+# ── Configure logging before other imports ───────────────────────
+from src.config import LOG_LEVEL  # noqa: E402
+
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL, logging.INFO),
+    format="%(asctime)s │ %(levelname)-8s │ %(name)s │ %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
-from rag_chain import ask                                          # noqa: E402
-from vectorstore import load_vectorstore, create_vectorstore       # noqa: E402
-from config import AUTO_INGEST_INTERVAL_HOURS                      # noqa: E402
-
 logger = logging.getLogger("rag_legal_assistant")
+
+# ── Application imports ──────────────────────────────────────────
+from app.schemas import (  # noqa: E402
+    AskRequest,
+    AskResponse,
+    IngestResponse,
+    AutoIngestResponse,
+    AuthConfigResponse,
+    AnalyticsResponse,
+)
+from app.auth import get_current_user, AUTH_ENABLED  # noqa: E402
+from app.analytics import (  # noqa: E402
+    track_question,
+    track_activity,
+    get_analytics,
+)
+from src.config import (  # noqa: E402
+    AUTO_INGEST_INTERVAL_HOURS,
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
+    ALLOWED_ORIGINS,
+)
 
 _scheduler = None  # module-level reference so we can shut it down
 
@@ -55,12 +84,15 @@ async def lifespan(app: FastAPI):
 
     # 1. Pre-load FAISS index
     try:
+        from src.vectorstore import load_vectorstore
         load_vectorstore()
         logger.info("FAISS index loaded at startup.")
     except FileNotFoundError:
         logger.warning(
             "No FAISS index found — call POST /ingest or /auto-ingest first."
         )
+    except Exception as exc:
+        logger.error("Failed to load FAISS index: %s", exc)
 
     # 2. Start background scheduler (if interval > 0)
     if AUTO_INGEST_INTERVAL_HOURS > 0:
@@ -79,41 +111,35 @@ async def lifespan(app: FastAPI):
             )
             _scheduler.start()
             logger.info(
-                f"Auto-ingest scheduler started — every {AUTO_INGEST_INTERVAL_HOURS}h"
+                "Auto-ingest scheduler started — every %dh",
+                AUTO_INGEST_INTERVAL_HOURS,
             )
         except Exception as exc:
-            logger.warning(f"Could not start auto-ingest scheduler: {exc}")
+            logger.warning("Could not start auto-ingest scheduler: %s", exc)
 
-    yield  # app runs
+    logger.info("Application startup complete (auth=%s)", AUTH_ENABLED)
+    yield  # ── app runs ──
 
     # Shutdown
     if _scheduler is not None:
         _scheduler.shutdown(wait=False)
-
-
-# ── Configuration ────────────────────────────────────────────────
-
-# Origins allowed to call the API.  Read from ALLOWED_ORIGINS env var
-# (comma-separated) so the same code works locally and on Render.
-# The UI is served from the same origin via /ui, so it is always allowed.
-_default_origins = "http://localhost,http://localhost:8000,http://127.0.0.1,http://127.0.0.1:8000"
-ALLOWED_ORIGINS = [
-    o.strip()
-    for o in os.getenv("ALLOWED_ORIGINS", _default_origins).split(",")
-    if o.strip()
-]
+    logger.info("Application shutdown complete.")
 
 
 # ── App instance ─────────────────────────────────────────────────
 
 app = FastAPI(
-    title="RAG Legal Assistant",
-    version="1.0.0",
-    description="Ask questions over legal PDFs and get answers with source citations.",
+    title="Corporate Law Assistant",
+    version="2.0.0",
+    description=(
+        "AI-powered legal research assistant for Indian corporate law. "
+        "Ask questions and get answers with cited sources from authoritative "
+        "legal documents."
+    ),
     lifespan=lifespan,
 )
 
-# ── CORS middleware (must be added before routes are resolved) ───
+# ── CORS middleware ──────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -122,26 +148,72 @@ app.add_middleware(
     allow_credentials=False,
 )
 
-# ── Serve the frontend UI from ui/ ──────────────────────────────
+# ── Serve the frontend UI ───────────────────────────────────────
 UI_DIR = PROJECT_ROOT / "ui"
 if UI_DIR.is_dir():
     app.mount("/ui", StaticFiles(directory=str(UI_DIR), html=True), name="ui")
 
 
-# ── Endpoints ────────────────────────────────────────────────────
+# ═════════════════════════════════════════════════════════════════
+#  PUBLIC ENDPOINTS
+# ═════════════════════════════════════════════════════════════════
+
+@app.get("/health")
+async def health():
+    """Health check for Render / monitoring."""
+    return {"status": "ok"}
+
+
+@app.get("/")
+async def root():
+    """Redirect bare root to the chat UI."""
+    return RedirectResponse(url="/ui/index.html")
+
+
+@app.get("/api/auth/config", response_model=AuthConfigResponse)
+async def auth_config():
+    """Return Supabase public config for the frontend.
+
+    If SUPABASE_URL is empty, the frontend knows auth is disabled
+    and will skip the login flow.
+    """
+    return AuthConfigResponse(
+        supabase_url=SUPABASE_URL,
+        supabase_anon_key=SUPABASE_ANON_KEY,
+    )
+
+
+# ═════════════════════════════════════════════════════════════════
+#  AUTHENTICATED ENDPOINTS
+# ═════════════════════════════════════════════════════════════════
 
 @app.post("/ask", response_model=AskResponse)
-async def ask_question(body: AskRequest):
+async def ask_question(
+    body: AskRequest,
+    user: dict = Depends(get_current_user),
+):
     """Answer a legal question using retrieved PDF context."""
+    start = time.time()
+    user_id = user.get("sub", "anonymous")
+
     try:
+        from src.rag_chain import ask
         result = ask(body.question)
+
+        elapsed_ms = (time.time() - start) * 1000
+
+        # Track analytics (non-blocking — failures don't affect response)
+        track_question(user_id, body.question, elapsed_ms)
+        track_activity(user_id, "ask")
+
         return AskResponse(**result)
+
     except FileNotFoundError as exc:
         raise HTTPException(
             status_code=503,
             detail=(
                 "FAISS index not found. "
-                "Call POST /ingest first to build the index."
+                "The knowledge base has not been indexed yet."
             ),
         ) from exc
     except Exception as exc:
@@ -152,10 +224,27 @@ async def ask_question(body: AskRequest):
         ) from exc
 
 
+@app.get("/api/analytics", response_model=AnalyticsResponse)
+async def analytics_endpoint(
+    user: dict = Depends(get_current_user),
+):
+    """Return aggregated usage analytics."""
+    track_activity(user.get("sub", "anonymous"), "view_analytics")
+    data = get_analytics()
+    return AnalyticsResponse(**data)
+
+
+# ═════════════════════════════════════════════════════════════════
+#  ADMIN ENDPOINTS (not exposed in UI — for admin use only)
+# ═════════════════════════════════════════════════════════════════
+
 @app.post("/ingest", response_model=IngestResponse)
-async def ingest_documents():
+async def ingest_documents(
+    user: dict = Depends(get_current_user),
+):
     """Rebuild the FAISS index from all PDFs in data/documents/."""
     try:
+        from src.vectorstore import create_vectorstore
         vs = create_vectorstore()
         return IngestResponse(
             status="success",
@@ -175,10 +264,11 @@ async def ingest_documents():
 
 
 @app.post("/auto-ingest", response_model=AutoIngestResponse)
-async def auto_ingest_documents():
-    """Run the incremental auto-ingest pipeline (hash-based dedup)."""
+async def auto_ingest_documents(
+    user: dict = Depends(get_current_user),
+):
+    """Run the incremental auto-ingest pipeline."""
     try:
-        # Import here to avoid circular imports during module load
         from auto_ingest import run_pipeline
 
         stats = run_pipeline(skip_scrape=False)
@@ -201,15 +291,3 @@ async def auto_ingest_documents():
             status_code=500,
             detail=f"Auto-ingestion failed: {exc}",
         ) from exc
-
-
-@app.get("/health")
-async def health():
-    """Simple health check for Render / monitoring."""
-    return {"status": "ok"}
-
-
-@app.get("/")
-async def root():
-    """Redirect the bare root to the chat UI."""
-    return RedirectResponse(url="/ui/index.html")
