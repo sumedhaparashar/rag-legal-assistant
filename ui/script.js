@@ -261,26 +261,53 @@ const UI = {
 
   /**
    * Build source cards HTML.
+   *
+   * Each card links to /docs/<source_file>#page=<page>, which opens the
+   * PDF in a new browser tab and jumps to the exact page. Works in Chrome,
+   * Edge, and Firefox via the native #page=N fragment.
    */
   renderSourceCards(sources) {
-    const sourceItems = sources.map((src, i) => {
+    const sourceItems = sources.map((src) => {
       const relevance = src.relevance_score != null
         ? `<span class="source-relevance">${Math.round(src.relevance_score * 100)}%</span>`
         : '';
-      const page = src.page != null ? `<span class="source-page">Page ${src.page}</span>` : '';
-      const snippet = src.snippet ? `<p class="source-snippet">${UI.escapeHtml(src.snippet)}</p>` : '';
+      const page = src.page != null
+        ? `<span class="source-page">Page ${src.page}</span>`
+        : '';
+      const section = src.section
+        ? `<span class="source-section">§ ${UI.escapeHtml(src.section)}</span>`
+        : '';
+      const snippet = src.snippet
+        ? `<p class="source-snippet">${UI.escapeHtml(src.snippet)}</p>`
+        : '';
 
-      return `
-        <div class="source-card">
-          <div class="source-header">
-            <span class="source-icon">📄</span>
-            <span class="source-filename" title="${UI.escapeHtml(src.file || 'Unknown')}">${UI.escapeHtml(src.file || 'Unknown source')}</span>
-            ${page}
-            ${relevance}
-          </div>
-          ${snippet}
-        </div>
+      // Build the PDF URL. Prefer source_file (actual disk filename);
+      // fall back to the display name if source_file is missing.
+      const fileForUrl = src.source_file || src.file || '';
+      const canLink = fileForUrl && src.page != null;
+      const pdfUrl = canLink
+        ? `/docs/${encodeURIComponent(fileForUrl)}#page=${src.page}`
+        : null;
+
+      const headerInner = `
+        <span class="source-icon">📄</span>
+        <span class="source-filename" title="${UI.escapeHtml(src.file || 'Unknown')}">
+          ${UI.escapeHtml(src.file || 'Unknown source')}
+        </span>
+        ${section}
+        ${page}
+        ${relevance}
       `;
+
+      // If we have a link, wrap header + snippet in <a>; otherwise render plain.
+      const inner = pdfUrl
+        ? `<a class="source-link" href="${pdfUrl}" target="_blank" rel="noopener noreferrer">
+             <div class="source-header">${headerInner}</div>
+             ${snippet}
+           </a>`
+        : `<div class="source-header">${headerInner}</div>${snippet}`;
+
+      return `<div class="source-card">${inner}</div>`;
     }).join('');
 
     return `
@@ -488,7 +515,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ── Input Change → Enable/Disable Send ──
   if (input) {
     input.addEventListener('input', () => UI.updateSendButton());
-    // Allow Enter to submit (default form behavior)
     input.focus();
   }
 

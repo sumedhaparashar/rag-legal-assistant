@@ -39,7 +39,6 @@ CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
 RETRIEVER_K = int(os.getenv("RETRIEVER_K", "5"))
 
 # ── LLM provider selection ──────────────────────────────────────
-# Supported values: "ollama", "openai", "groq", "together"
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq")
 
 # -- Ollama (local) -----------------------------------------------
@@ -47,10 +46,8 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
 
 # -- OpenAI-compatible API (OpenAI / Groq / Together) -------------
-#    All three use the same ChatOpenAI interface; only the base URL
-#    and API key differ.
 LLM_API_KEY = os.getenv("LLM_API_KEY", "")
-LLM_API_BASE = os.getenv("LLM_API_BASE", "")       # auto-set per provider if blank
+LLM_API_BASE = os.getenv("LLM_API_BASE", "")
 LLM_MODEL = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
 
 # -- Shared --------------------------------------------------------
@@ -77,3 +74,12 @@ ALLOWED_ORIGINS = [
 
 # ── Logging ──────────────────────────────────────────────────────
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+
+# ── NEW: Metadata extraction & multi-tenancy ────────────────────
+# When True, PDFs are renamed on disk to their detected act name.
+# e.g. "1492085873402.pdf" → "Companies_Act_2013.pdf"
+ENABLE_AUTO_RENAME = os.getenv("ENABLE_AUTO_RENAME", "true").lower() == "true"
+
+# Default organization for single-tenant deployments.
+# In multi-tenant mode, this is overridden per request.
+DEFAULT_ORG_ID = os.getenv("DEFAULT_ORG_ID", "default")
