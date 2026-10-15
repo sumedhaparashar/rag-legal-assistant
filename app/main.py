@@ -6,6 +6,7 @@ Endpoints
   GET  /                   — redirect to the chat UI
   GET  /health             — health check (public)
   GET  /api/auth/config    — Supabase public config (public)
+  GET  /docs/{filename}    — serve a legal PDF (public, supports #page=N)
   POST /ask                — answer a legal question (auth required)
   POST /ingest             — rebuild FAISS index (admin, not exposed in UI)
   POST /auto-ingest        — incremental ingest (admin, not exposed in UI)
@@ -30,7 +31,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 # ── Make src/, app/, and scripts/ importable ─────────────────────
@@ -70,6 +71,7 @@ from src.config import (  # noqa: E402
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
     ALLOWED_ORIGINS,
+    DOCUMENTS_DIR,
 )
 
 _scheduler = None  # module-level reference so we can shut it down
@@ -127,7 +129,6 @@ async def lifespan(app: FastAPI):
 
 
 # ── App instance ─────────────────────────────────────────────────
-
 app = FastAPI(
     title="Corporate Law Assistant",
     version="2.0.0",
@@ -180,6 +181,36 @@ async def auth_config():
     return AuthConfigResponse(
         supabase_url=SUPABASE_URL,
         supabase_anon_key=SUPABASE_ANON_KEY,
+    )
+
+
+@app.get("/docs/{filename}")
+async def serve_pdf(filename: str):
+    """Serve a legal PDF from data/documents/.
+
+    Supports browser page navigation via #page=N fragment
+    (handled entirely by the browser — the server just returns the PDF).
+
+    Security:
+      - Only files ending in .pdf are served
+      - Path traversal is blocked (filename is stripped to basename)
+      - PDFs are served inline (open in browser, not download)
+    """
+    safe_name = Path(filename).name
+    if not safe_name.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are served")
+
+    pdf_path = DOCUMENTS_DIR / safe_name
+    if not pdf_path.exists():
+        raise HTTPException(
+            status_code=404, detail=f"Document not found: {safe_name}"
+        )
+
+    return FileResponse(
+        pdf_path,
+        media_type="application/pdf",
+        filename=safe_name,
+        headers={"Content-Disposition": f'inline; filename="{safe_name}"'},
     )
 
 

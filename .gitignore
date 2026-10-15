@@ -7,7 +7,7 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Environment variables (keep .env.example, ignore actual .env)
+# Environment variables
 .env
 
 # IDE
@@ -18,16 +18,13 @@ __pycache__/
 Thumbs.db
 .DS_Store
 
-# ── Large / generated data files ─────────────────────────────
-# Hash registry is ~34 MB and regenerated on demand via /auto-ingest
+# ── Generated / large data ────────────────────────────────────
 data/hash_registry.json
-
-# Analytics SQLite DB is runtime-only data
+data/hash_registry.json.old
 data/analytics.db
+data/vectorstore/
+data/vectorstore.old/
+data/documents/*.pdf
 
-# NOTE: data/vectorstore/ is NOT gitignored — we commit the pre-built
-# FAISS index so the deployed app can serve immediately without rebuilding.
-# NOTE: data/documents/ is NOT gitignored — PDFs are needed for /ingest.
-
-# Research outputs (not needed in production)
+# Research outputs
 research_results/

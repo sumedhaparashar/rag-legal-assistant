@@ -19,9 +19,16 @@ class AskRequest(BaseModel):
 
 
 class SourceInfo(BaseModel):
-    file: str = Field(..., description="Source PDF filename")
+    file: str = Field(..., description="Display name of the source (act name)")
+    source_file: Optional[str] = Field(
+        None,
+        description="Actual PDF filename on disk (used to build /docs/ URL)",
+    )
     page: int = Field(..., description="1-based page number")
     snippet: str = Field(..., description="First ~300 chars of the chunk")
+    section: Optional[str] = Field(
+        None, description="Detected section/article number, if any"
+    )
     relevance_score: Optional[float] = Field(
         None, description="Similarity score (0-1)"
     )
