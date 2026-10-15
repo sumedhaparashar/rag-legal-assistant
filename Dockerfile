@@ -54,11 +54,7 @@ COPY data/documents/ ./data/documents/
 # ── Create data directory for analytics DB ───────────────────
 RUN mkdir -p /app/data
 
-# ── Build the FAISS vector store at image build time ─────────
-# The vector store is not committed to Git (see .gitignore), so we
-# rebuild it here. This runs once per Docker build (~2-3 min).
-RUN python scripts/auto_ingest.py --skip-scrape || \
-    echo "WARN: Build-time ingestion failed; index will be rebuilt at startup if needed"
+
 
 # ── Expose port (Render sets $PORT dynamically) ─────────────
 EXPOSE 8000
@@ -68,5 +64,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
 # ── Start the server ────────────────────────────────────────
-# Use shell form so $PORT is expanded at runtime
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --timeout-keep-alive 120
+
+# Run ingestion first, then start the server.
+# Using shell form so `$PORT` is expanded at runtime.
+CMD python scripts/auto_ingest.py --skip-scrape && \
+    uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --timeout-keep-alive 120
