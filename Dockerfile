@@ -50,10 +50,15 @@ COPY app/ ./app/
 COPY scripts/ ./scripts/
 COPY ui/ ./ui/
 COPY data/documents/ ./data/documents/
-COPY data/vectorstore/ ./data/vectorstore/
 
 # ── Create data directory for analytics DB ───────────────────
 RUN mkdir -p /app/data
+
+# ── Build the FAISS vector store at image build time ─────────
+# The vector store is not committed to Git (see .gitignore), so we
+# rebuild it here. This runs once per Docker build (~2-3 min).
+RUN python scripts/auto_ingest.py --skip-scrape || \
+    echo "WARN: Build-time ingestion failed; index will be rebuilt at startup if needed"
 
 # ── Expose port (Render sets $PORT dynamically) ─────────────
 EXPOSE 8000
