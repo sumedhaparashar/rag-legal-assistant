@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Corporate Law Assistant — AI-powered legal research for Indian corporate law with cited sources and document references.">
+  <title>Corporate Law Assistant — AI Legal Research</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg-gradient" aria-hidden="true"></div>
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <header class="app-header" role="banner">
+    <div class="header-left">
+      <span class="header-logo" aria-hidden="true">⚖️</span>
+      <span class="header-title">Corporate Law Assistant</span>
+    </div>
+    <nav class="header-nav" role="navigation" aria-label="Main navigation">
+      <a href="/ui/index.html" class="nav-link active" id="nav-chat" aria-current="page">Chat</a>
+      <a href="/ui/analytics.html" class="nav-link" id="nav-analytics">Analytics</a>
+    </nav>
+    <div class="header-right">
+      <span class="user-email" id="user-email" aria-label="Logged in user"></span>
+      <button class="btn-signout" id="btn-signout" type="button" aria-label="Sign out">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- ── Main Chat Page ─────────────────────────────────────── -->
+  <main class="page-chat" role="main">
+    <!-- Chat Messages Area -->
+    <div class="chat-area" id="chat-area" aria-label="Chat messages" role="log" aria-live="polite">
+      <!-- Welcome State -->
+      <div class="welcome-state" id="welcome-state">
+        <div class="welcome-icon" aria-hidden="true">⚖️</div>
+        <h1 class="welcome-heading">How can I help you today?</h1>
+        <p class="welcome-subtitle">Ask questions about Indian corporate law, company regulations, and legal compliance</p>
+        <div class="welcome-chips" role="list" aria-label="Suggested questions">
+          <button class="suggestion-chip" role="listitem" data-question="What are the duties and liabilities of company directors?">What are the duties and liabilities of company directors?</button>
+          <button class="suggestion-chip" role="listitem" data-question="Explain the process of company incorporation">Explain the process of company incorporation</button>
+          <button class="suggestion-chip" role="listitem" data-question="What are shareholder rights under the Companies Act?">What are shareholder rights under the Companies Act?</button>
+          <button class="suggestion-chip" role="listitem" data-question="Describe the penalties for non-compliance with SEBI regulations">Describe the penalties for non-compliance with SEBI regulations</button>
+          <button class="suggestion-chip" role="listitem" data-question="What is the role of the Board of Directors?">What is the role of the Board of Directors?</button>
+          <button class="suggestion-chip" role="listitem" data-question="Explain the provisions of the Banking Regulation Act">Explain the provisions of the Banking Regulation Act</button>
+        </div>
+      </div>
+
+      <!-- Chat Messages Container -->
+      <div class="chat-messages" id="chat-messages"></div>
+    </div>
+
+    <!-- Input Bar -->
+    <div class="input-bar" id="input-bar">
+      <form class="input-wrapper" id="question-form" autocomplete="off">
+        <label for="question-input" class="sr-only">Ask a legal question</label>
+        <input type="text" id="question-input" placeholder="Ask a legal question…" autocomplete="off" aria-label="Type your legal question here">
+        <button type="submit" class="btn-send" id="btn-send" aria-label="Send question" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </form>
+      <p class="chat-footnote" aria-label="Disclaimer">Responses are AI-generated and should not be considered legal advice.</p>
+    </div>
+  </main>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" role="status" aria-live="polite"></div>
+
+  <!-- CDN Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

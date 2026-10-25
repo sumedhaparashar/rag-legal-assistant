@@ -1,0 +1,34 @@
+# ── Core LangChain (pinned to 0.2.x) ────────────────────────────
+langchain>=0.2.0,<0.3.0
+langchain-core>=0.2.0,<0.3.0
+langchain-community>=0.2.0,<0.3.0
+langchain-text-splitters>=0.2.0,<0.3.0
+
+# ── Vector store ─────────────────────────────────────────────────
+faiss-cpu
+
+# ── Embeddings ───────────────────────────────────────────────────
+sentence-transformers
+
+# ── PDF parsing ──────────────────────────────────────────────────
+pypdf
+
+# ── API server ───────────────────────────────────────────────────
+fastapi
+uvicorn[standard]
+
+# ── Utilities ────────────────────────────────────────────────────
+python-dotenv
+
+# ── LLM API providers (ChatOpenAI wrapper — works with Groq/Together too)
+openai
+
+# ── Authentication (JWT verification) ────────────────────────────
+PyJWT>=2.8.0
+
+# ── Web scraping (for auto-ingest) ───────────────────────────────
+requests
+beautifulsoup4
+
+# ── Background scheduling ────────────────────────────────────────
+apscheduler>=3.10,<4.0
