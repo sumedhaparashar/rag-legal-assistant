@@ -93,9 +93,8 @@ def _decode_token(token: str) -> dict:
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired. Please sign in again.")
     except jwt.InvalidTokenError as exc:
-        logger.debug("JWT verification failed: %s", exc)
-        raise HTTPException(status_code=401, detail="Invalid authentication token.")
-
+       logger.warning("JWT verification failed: %s", exc)
+       raise HTTPException(status_code=401, detail="Invalid authentication token.")
 
 # ── Anonymous user placeholder ───────────────────────────────────
 _ANONYMOUS_USER = {
