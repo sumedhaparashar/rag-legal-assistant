@@ -41,7 +41,8 @@ services:
 
       # ── CORS ─────────────────────────────────────────────────
       - key: ALLOWED_ORIGINS
-        value: "https://rag-legal-assistant.onrender.com"
+        value: "https://rag-legal-assistant-1.onrender.com"
+      
 
       # ── Auto-ingest (disabled by default) ────────────────────
       - key: SCRAPE_URL
