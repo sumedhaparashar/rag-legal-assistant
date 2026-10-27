@@ -49,11 +49,12 @@ COPY src/ ./src/
 COPY app/ ./app/
 COPY scripts/ ./scripts/
 
+
 COPY ui/ ./ui/
 COPY data/vectorstore/ ./data/vectorstore/
+COPY data/documents/ ./data/documents/
 
-# Create the documents directory if it is not present
-RUN mkdir -p /app/data/documents
+
 
 
 
