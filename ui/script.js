@@ -104,6 +104,38 @@ const Auth = {
   /**
    * Sign out and redirect.
    */
+  async checkAdmin() {
+    const adminLink = document.getElementById('admin-link');
+    const analyticsLink = document.getElementById('nav-analytics');
+
+    if (adminLink) adminLink.hidden = true;
+    if (analyticsLink) analyticsLink.hidden = true;
+
+    if (!authEnabled || !supabaseClient) {
+        return false;
+    }
+
+    try {
+        const response = await fetch('/api/auth/me', {
+            headers: await Auth.getAuthHeaders()
+        });
+
+        if (!response.ok) return false;
+
+        const data = await response.json();
+
+        if (data.is_admin === true) {
+            if (adminLink) adminLink.hidden = false;
+            if (analyticsLink) analyticsLink.hidden = false;
+            return true;
+        }
+
+        return false;
+    } catch (error) {
+        console.error('Admin verification failed:', error);
+        return false;
+    }
+},
   async signOut() {
     if (supabaseClient) {
       await supabaseClient.auth.signOut();
@@ -500,6 +532,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sessionOk = await Auth.checkSession();
     if (!sessionOk) return; // Redirecting…
   }
+  await Auth.checkAdmin();
 
   // ── DOM References ──
   const form = document.getElementById('question-form');

@@ -21,9 +21,29 @@
       <span class="header-title">Corporate Law Assistant</span>
     </div>
     <nav class="header-nav" role="navigation" aria-label="Main navigation">
-      <a href="/ui/index.html" class="nav-link active" id="nav-chat" aria-current="page">Chat</a>
-      <a href="/ui/analytics.html" class="nav-link" id="nav-analytics">Analytics</a>
-    </nav>
+
+    <a href="/ui/index.html"
+       class="nav-link active"
+       id="nav-chat"
+       aria-current="page">
+       Chat
+    </a>
+
+    <a href="/ui/analytics.html"
+       class="nav-link"
+       id="nav-analytics"
+       hidden>
+       Analytics
+    </a>
+
+    <a href="/ui/admin.html"
+       class="nav-link"
+       id="admin-link"
+       hidden>
+       Admin Dashboard
+    </a>
+
+</nav>
     <div class="header-right">
       <span class="user-email" id="user-email" aria-label="Logged in user"></span>
       <button class="btn-signout" id="btn-signout" type="button" aria-label="Sign out">Sign Out</button>
@@ -76,6 +96,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
-  <script src="script.js"></script>
+  <script src="script.js?v=3"></script>
 </body>
 </html>

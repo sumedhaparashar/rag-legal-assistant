@@ -60,7 +60,8 @@ from app.schemas import (  # noqa: E402
     AuthConfigResponse,
     AnalyticsResponse,
 )
-from app.auth import get_current_user, AUTH_ENABLED  # noqa: E402
+
+from app.auth import get_current_user, require_admin, AUTH_ENABLED
 from app.analytics import (  # noqa: E402
     track_question,
     track_activity,
@@ -164,6 +165,22 @@ async def health():
     """Health check for Render / monitoring."""
     return {"status": "ok"}
 
+@app.get("/api/auth/me")
+async def current_user_info(
+    user: dict = Depends(get_current_user),
+):
+    return {
+        "authenticated": user.get("sub") != "anonymous",
+        "is_admin": (
+            AUTH_ENABLED
+            and user.get("sub") != "anonymous"
+            and user.get("sub") in {
+                uid.strip()
+                for uid in os.getenv("ADMIN_USER_IDS", "").split(",")
+                if uid.strip()
+            }
+        ),
+    }
 
 @app.get("/")
 async def root():
@@ -257,12 +274,13 @@ async def ask_question(
 
 @app.get("/api/analytics", response_model=AnalyticsResponse)
 async def analytics_endpoint(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     """Return aggregated usage analytics."""
     track_activity(user.get("sub", "anonymous"), "view_analytics")
     data = get_analytics()
     return AnalyticsResponse(**data)
+
 
 
 # ═════════════════════════════════════════════════════════════════
@@ -271,7 +289,7 @@ async def analytics_endpoint(
 
 @app.post("/ingest", response_model=IngestResponse)
 async def ingest_documents(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     """Rebuild the FAISS index from all PDFs in data/documents/."""
     try:
@@ -296,7 +314,7 @@ async def ingest_documents(
 
 @app.post("/auto-ingest", response_model=AutoIngestResponse)
 async def auto_ingest_documents(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     """Run the incremental auto-ingest pipeline."""
     try:
