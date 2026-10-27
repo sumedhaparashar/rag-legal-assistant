@@ -48,9 +48,14 @@ RUN apt-get purge -y build-essential && \
 COPY src/ ./src/
 COPY app/ ./app/
 COPY scripts/ ./scripts/
+
 COPY ui/ ./ui/
-COPY data/documents/ ./data/documents/
 COPY data/vectorstore/ ./data/vectorstore/
+
+# Create the documents directory if it is not present
+RUN mkdir -p /app/data/documents
+
+
 
 # ── Create data directory for analytics DB ───────────────────
 RUN mkdir -p /app/data
