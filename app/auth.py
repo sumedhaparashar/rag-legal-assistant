@@ -8,12 +8,14 @@ Verifies JWT tokens issued by Supabase Auth. Supports BOTH:
 The JWKS endpoint is discovered automatically from SUPABASE_URL.
 """
 
+
 import logging
+import os
 from typing import Optional
 
 import jwt
 import requests
-from fastapi import HTTPException, Header
+from fastapi import HTTPException, Header, Depends
 
 from src.config import SUPABASE_JWT_SECRET, SUPABASE_URL
 
@@ -128,3 +130,33 @@ async def get_optional_user(authorization: Optional[str] = Header(None)) -> Opti
         return _decode_token(authorization.split(" ", 1)[1])
     except HTTPException:
         return None
+    # ── Admin authorization ─────────────────────────────────────────
+
+def _admin_ids() -> set[str]:
+    """Read trusted administrator user IDs from environment variables."""
+    return {
+        user_id.strip()
+        for user_id in os.getenv("ADMIN_USER_IDS", "").split(",")
+        if user_id.strip()
+    }
+
+
+async def require_admin(
+    user: dict = Depends(get_current_user),
+) -> dict:
+    """Allow only authenticated administrators to access this route."""
+
+    # Never permit admin access when authentication is disabled.
+    if not AUTH_ENABLED or user.get("sub") == "anonymous":
+        raise HTTPException(
+            status_code=403,
+            detail="Admin access denied",
+        )
+
+    if user.get("sub") not in _admin_ids():
+        raise HTTPException(
+            status_code=403,
+            detail="Admin access denied",
+        )
+
+    return user

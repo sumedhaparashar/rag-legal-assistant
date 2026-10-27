@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Corporate Law Assistant</title>
+  <link rel="stylesheet" href="/ui/style.css">
+  <style>
+    .admin-main {
+      max-width: 1150px;
+      margin: 40px auto;
+      padding: 0 24px 60px;
+      position: relative;
+    }
+
+    .admin-heading {
+      margin-bottom: 24px;
+    }
+
+    .admin-heading h1 {
+      margin-bottom: 8px;
+    }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .admin-card {
+      padding: 24px;
+      border: 1px solid rgba(150, 150, 170, 0.25);
+      border-radius: 14px;
+      background: var(--surface, #ffffff);
+      color: var(--text-primary, #222);
+    }
+
+    .admin-card h2 {
+      font-size: 14px;
+      font-weight: 500;
+      margin: 0 0 12px;
+    }
+
+    .admin-value {
+      font-size: 30px;
+      font-weight: 700;
+    }
+
+    .admin-section {
+      margin-top: 24px;
+    }
+
+    .admin-section h2 {
+      margin-bottom: 16px;
+    }
+
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .admin-table th,
+    .admin-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .admin-error {
+      color: #b91c1c;
+    }
+
+    @media (max-width: 600px) {
+      .admin-main {
+        margin-top: 24px;
+        padding: 0 16px 40px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-gradient" aria-hidden="true"></div>
+
+  <header class="app-header">
+    <div class="header-left">
+      <span class="header-logo">⚖️</span>
+      <span class="header-title">Corporate Law Assistant</span>
+    </div>
+
+    <nav class="header-nav" aria-label="Main navigation">
+      <a href="/ui/index.html" class="nav-link">Chat</a>
+      <a href="/ui/analytics.html" class="nav-link">Analytics</a>
+      <a href="/ui/admin.html" class="nav-link active"
+         aria-current="page">Admin Dashboard</a>
+    </nav>
+
+    <div class="header-right">
+      <span class="user-email" id="user-email"></span>
+      <button class="btn-signout" id="btn-signout" type="button">
+        Sign Out
+      </button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <div id="admin-loading" role="status">
+      Verifying administrator access...
+    </div>
+
+    <div id="admin-error" class="admin-error" role="alert" hidden></div>
+
+    <div id="admin-content" hidden>
+      <div class="admin-heading">
+        <h1>Admin Dashboard</h1>
+        <p>Application usage and system performance</p>
+      </div>
+
+      <section class="admin-grid" aria-label="Key metrics">
+        <div class="admin-card">
+          <h2>Total Users</h2>
+          <div class="admin-value" id="total-users">—</div>
+        </div>
+
+        <div class="admin-card">
+          <h2>Daily Active Users</h2>
+          <div class="admin-value" id="daily-users">—</div>
+        </div>
+
+        <div class="admin-card">
+          <h2>Total Questions</h2>
+          <div class="admin-value" id="total-questions">—</div>
+        </div>
+
+        <div class="admin-card">
+          <h2>Weekly Questions</h2>
+          <div class="admin-value" id="weekly-questions">—</div>
+        </div>
+
+        <div class="admin-card">
+          <h2>Average Response Time</h2>
+          <div class="admin-value" id="response-time">—</div>
+        </div>
+
+        <div class="admin-card">
+          <h2>Server Uptime</h2>
+          <div class="admin-value" id="uptime">—</div>
+        </div>
+      </section>
+
+      <section class="admin-card admin-section">
+        <h2>Top Legal Topics</h2>
+        <table class="admin-table">
+          <thead>
+            <tr><th>Topic</th><th>Questions</th></tr>
+          </thead>
+          <tbody id="topics-body"></tbody>
+        </table>
+      </section>
+
+      <section class="admin-card admin-section">
+        <h2>Daily Question Activity</h2>
+        <table class="admin-table">
+          <thead>
+            <tr><th>Date</th><th>Questions</th></tr>
+          </thead>
+          <tbody id="daily-body"></tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/ui/admin.js"></script>
+</body>
+</html>

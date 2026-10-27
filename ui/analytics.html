@@ -341,18 +341,48 @@
 
       // ── Init ──
       async function init() {
-        await initAuth();
-        await fetchAnalytics();
+    await initAuth();
 
-        // Auto-refresh every 60 seconds
-        refreshInterval = setInterval(fetchAnalytics, 60000);
+    // Verify the user is an administrator before loading analytics.
+    const headers = await getAuthHeaders();
 
-        // Sign out button
-        const signOutBtn = document.getElementById('btn-signout');
-        if (signOutBtn) {
-          signOutBtn.addEventListener('click', signOut);
+    if (!headers.Authorization) {
+        window.location.replace('/ui/auth.html');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/auth/me', { headers });
+
+        if (!response.ok) {
+            window.location.replace('/ui/index.html');
+            return;
         }
-      }
+
+        const user = await response.json();
+
+        if (user.is_admin !== true) {
+            window.location.replace('/ui/index.html');
+            return;
+        }
+    } catch (error) {
+        console.error('Admin verification failed:', error);
+        window.location.replace('/ui/index.html');
+        return;
+    }
+
+    // Only administrators reach this point.
+    await fetchAnalytics();
+
+    // Auto-refresh every 60 seconds.
+    refreshInterval = setInterval(fetchAnalytics, 60000);
+
+    const signOutBtn = document.getElementById('btn-signout');
+
+    if (signOutBtn) {
+        signOutBtn.addEventListener('click', signOut);
+    }
+}
 
       // Clean up on page unload
       window.addEventListener('beforeunload', () => {
